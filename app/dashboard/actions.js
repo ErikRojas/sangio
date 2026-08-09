@@ -177,6 +177,23 @@ export async function inviteClient({ email, fullName, clientId }) {
 // Genera un link de acceso (magic link) para el correo del cliente y lo
 // devuelve como texto, sin que Supabase envíe ningún correo. Tú decides
 // cómo hacérselo llegar (correo, WhatsApp, etc.).
+
+// Genera un link a nuestra página de confirmación (no el link directo de
+// Supabase, que se consume solo con "visitarlo" — ver nota en el uso).
+async function buildConfirmLink(email) {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+
+  if (error) return { success: false, message: error.message };
+
+  const hashedToken = data?.properties?.hashed_token;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  return { success: true, link: `${siteUrl}/auth/confirm?token_hash=${hashedToken}&type=magiclink` };
+}
+
 export async function getClientMagicLink(clientId) {
   const supabase = createSupabaseServerClient();
 
@@ -194,25 +211,69 @@ export async function getClientMagicLink(clientId) {
   const ensured = await ensureClientAuth({ email: client.contact_email, fullName: client.name, clientId });
   if (!ensured.success) return ensured;
 
+  return buildConfirmLink(client.contact_email);
+}
+
+// Igual que ensureClientAuth, pero para gente de tu equipo (admin/team),
+// sin client_id.
+async function ensureTeamAuth({ email, fullName, role }) {
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: client.contact_email,
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email: email.trim(),
+    email_confirm: true,
   });
 
-  if (error) return { success: false, message: error.message };
+  let userId = created?.user?.id;
 
-  // OJO: no usamos data.properties.action_link directamente. Ese link de
-  // Supabase se consume solo con "visitarlo" (GET), y apps como WhatsApp
-  // o los escáneres de seguridad de correo lo abren solos para generar
-  // la vista previa, gastando el link antes de que el cliente le dé clic.
-  // En vez de eso, mandamos a nuestra propia página con un botón: el
-  // token solo se consume cuando alguien hace clic de verdad.
-  const hashedToken = data?.properties?.hashed_token;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const link = `${siteUrl}/auth/confirm?token_hash=${hashedToken}&type=magiclink`;
+  if (createError) {
+    const { data: list } = await admin.auth.admin.listUsers();
+    const existing = list?.users?.find((u) => u.email === email.trim());
+    if (existing) userId = existing.id;
+    if (!userId) return { success: false, message: createError.message };
+  }
 
-  return { success: true, link };
+  const { error: profileError } = await admin.from("profiles").upsert({
+    id: userId,
+    full_name: fullName || email.trim(),
+    role: role === "admin" ? "admin" : "team",
+    client_id: null,
+  });
+
+  if (profileError) return { success: false, message: profileError.message };
+
+  return { success: true, userId };
+}
+
+export async function inviteTeamMember({ email, fullName, role }) {
+  const supabase = createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: myProfile } = await supabase.from("profiles").select("role").eq("id", user?.id).single();
+
+  // Solo un admin puede sumar gente nueva al equipo (a diferencia de
+  // clientes/proyectos, donde admin y team tienen los mismos permisos).
+  if (myProfile?.role !== "admin") {
+    return { success: false, message: "Solo un admin puede agregar miembros al equipo." };
+  }
+  if (!email?.trim()) return { success: false, message: "Correo requerido." };
+
+  const result = await ensureTeamAuth({ email, fullName, role });
+  if (!result.success) return result;
+
+  revalidatePath("/dashboard");
+  return result;
+}
+
+export async function getTeamMemberMagicLink(email) {
+  const supabase = createSupabaseServerClient();
+
+  if (!(await assertIsTeam(supabase))) {
+    return { success: false, message: "No autorizado." };
+  }
+
+  return buildConfirmLink(email);
 }
 
 export async function createStudioClient({ name, contactEmail, inviteAsClient }) {
