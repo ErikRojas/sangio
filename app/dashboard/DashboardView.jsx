@@ -17,6 +17,8 @@ import {
   createTask,
   updateTaskStatus,
   deleteTask,
+  inviteTeamMember,
+  getTeamMemberMagicLink,
 } from "./actions";
 
 const STAGE_META = {
@@ -189,6 +191,78 @@ function NewProjectModal({ clients, onClose }) {
 // así un vistazo rápido distingue "esto es la etapa del proyecto"
 // de "esto es la categoría del hito".
 const MILESTONE_COLORS = ["#B5563C", "#2F6F76", "#A98237", "#6B4E71", "#B0637A", "#7A7F3E"];
+
+function NewTeamMemberModal({ onClose }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("team");
+  const [error, setError] = useState("");
+  const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    startTransition(async () => {
+      const res = await inviteTeamMember({ email, fullName: name, role });
+      if (!res.success) {
+        setError(res.message);
+        return;
+      }
+      const linkRes = await getTeamMemberMagicLink(email);
+      if (linkRes.success) setLink(linkRes.link);
+      else setError(linkRes.message);
+    });
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+  }
+
+  return (
+    <Modal title="Nuevo miembro de equipo" onClose={onClose}>
+      {link ? (
+        <div className="space-y-3">
+          <p className="text-sm">Cuenta creada. Copia este link y mándaselo para que entre por primera vez:</p>
+          <div className="text-[11px] break-all border px-2 py-1.5" style={{ borderColor: "var(--color-line)", color: "var(--color-ink-soft)" }}>
+            {link}
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleCopy} className="text-xs font-mono">{copied ? "¡copiado!" : "copiar"}</button>
+            <span className="text-[10px]" style={{ color: "var(--color-ink-soft)" }}>expira en un tiempo limitado</span>
+          </div>
+          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            listo
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-mono uppercase mb-1">Nombre</label>
+            <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
+          </div>
+          <div>
+            <label className="block text-xs font-mono uppercase mb-1">Correo</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
+          </div>
+          <div>
+            <label className="block text-xs font-mono uppercase mb-1">Rol</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border px-3 py-2 text-sm" style={inputStyle()}>
+              <option value="team">Equipo</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
+          <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            {isPending ? "Creando..." : "Crear cuenta"}
+          </button>
+        </form>
+      )}
+    </Modal>
+  );
+}
 
 function CopyClientLink({ clientId }) {
   const [link, setLink] = useState("");
@@ -536,6 +610,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
   const [isPending, startTransition] = useTransition();
   const [showClientModal, setShowClientModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showTeamModal, setShowTeamModal] = useState(false);
   const isTeam = role === "admin" || role === "team";
   const selected = projects.find((p) => p.id === selectedId);
   const supabase = createClient();
@@ -580,6 +655,9 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
             <>
               <button onClick={() => setShowClientModal(true)} className="text-xs font-mono">+ cliente</button>
               <button onClick={() => setShowProjectModal(true)} className="text-xs font-mono">+ proyecto</button>
+              {role === "admin" && (
+                <button onClick={() => setShowTeamModal(true)} className="text-xs font-mono">+ equipo</button>
+              )}
             </>
           )}
           <button onClick={handleLogout} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
@@ -738,6 +816,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
 
       {showClientModal && <NewClientModal onClose={() => setShowClientModal(false)} />}
       {showProjectModal && <NewProjectModal clients={clients} onClose={() => setShowProjectModal(false)} />}
+      {showTeamModal && <NewTeamMemberModal onClose={() => setShowTeamModal(false)} />}
     </div>
   );
 }
