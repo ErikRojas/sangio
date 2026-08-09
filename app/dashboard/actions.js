@@ -243,7 +243,7 @@ export async function addMilestone({ projectId, title, dueDate, category, color 
     title: title.trim(),
     due_date: dueDate || null,
     category: category?.trim() || null,
-    color: color || "#3D5A80",
+    color: color || "#B5563C",
     sort_order: count || 0,
   });
 
@@ -266,7 +266,7 @@ export async function editMilestone({ milestoneId, title, dueDate, category, col
       title: title.trim(),
       due_date: dueDate || null,
       category: category?.trim() || null,
-      color: color || "#3D5A80",
+      color: color || "#B5563C",
     })
     .eq("id", milestoneId);
 
