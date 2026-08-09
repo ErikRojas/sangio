@@ -14,6 +14,9 @@ import {
   updateProjectStage,
   setProjectProgress,
   getClientMagicLink,
+  createTask,
+  updateTaskStatus,
+  deleteTask,
 } from "./actions";
 
 const STAGE_META = {
@@ -394,6 +397,103 @@ function AddMilestoneForm({ projectId }) {
   );
 }
 
+const TASK_STATUS_META = {
+  pendiente: { label: "Pendiente", color: "#6C7A89" },
+  en_progreso: { label: "En progreso", color: "#2F6F76" },
+  hecho: { label: "Hecho", color: "#588157" },
+};
+const TASK_STATUS_ORDER = ["pendiente", "en_progreso", "hecho"];
+
+function TaskRow({ task: t }) {
+  const [busy, startTransition] = useTransition();
+  const meta = TASK_STATUS_META[t.status] || TASK_STATUS_META.pendiente;
+
+  function handleCycle() {
+    const next = TASK_STATUS_ORDER[(TASK_STATUS_ORDER.indexOf(t.status) + 1) % TASK_STATUS_ORDER.length];
+    startTransition(async () => {
+      await updateTaskStatus(t.id, next);
+    });
+  }
+
+  function handleDelete() {
+    if (!confirm(`¿Borrar la tarea "${t.title}"?`)) return;
+    startTransition(async () => {
+      await deleteTask(t.id);
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-2 py-1.5 group">
+      <button
+        disabled={busy}
+        onClick={handleCycle}
+        className="text-[10px] font-mono uppercase px-2 py-0.5 flex-shrink-0"
+        style={{ backgroundColor: `${meta.color}1A`, color: meta.color }}
+        title="Clic para cambiar el estado"
+      >
+        {meta.label}
+      </button>
+      <span className="flex-1 text-sm truncate" style={{ color: "var(--color-ink)" }}>{t.title}</span>
+      {t.assignee?.full_name && (
+        <span className="text-[11px] flex-shrink-0" style={{ color: "var(--color-ink-soft)" }}>{t.assignee.full_name}</span>
+      )}
+      {t.due_date && (
+        <span className="text-[11px] font-mono flex-shrink-0" style={{ color: "var(--color-ink-soft)" }}>{t.due_date}</span>
+      )}
+      <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        <Trash2 size={12} color="#BC4749" />
+      </button>
+    </div>
+  );
+}
+
+function AddTaskForm({ projectId, teamMembers }) {
+  const [title, setTitle] = useState("");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    startTransition(async () => {
+      const res = await createTask({ projectId, title, assignedTo: assignedTo || null, dueDate });
+      if (res.success) {
+        setTitle("");
+        setAssignedTo("");
+        setDueDate("");
+        setOpen(false);
+      }
+    });
+  }
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-xs font-mono mt-2" style={{ color: "var(--color-ink-soft)" }}>
+        <Plus size={12} /> agregar tarea
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-2 space-y-2">
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título de la tarea" required className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
+      <div className="flex gap-2">
+        <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)} className="flex-1 border px-2 py-1.5 text-xs" style={inputStyle()}>
+          <option value="">Sin asignar</option>
+          {teamMembers.map((m) => (
+            <option key={m.id} value={m.id}>{m.full_name}</option>
+          ))}
+        </select>
+        <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="border px-2 py-1.5 text-xs" style={inputStyle()} />
+        <button disabled={isPending} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          agregar
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function AddUpdateForm({ projectId }) {
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(true);
@@ -431,7 +531,7 @@ function AddUpdateForm({ projectId }) {
   );
 }
 
-export default function DashboardView({ role, fullName, projects, clients, loadError }) {
+export default function DashboardView({ role, fullName, projects, clients, teamMembers, loadError }) {
   const [selectedId, setSelectedId] = useState(projects[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
   const [showClientModal, setShowClientModal] = useState(false);
@@ -595,6 +695,23 @@ export default function DashboardView({ role, fullName, projects, clients, loadE
               </div>
               {isTeam && <AddMilestoneForm projectId={selected.id} />}
             </div>
+
+            {isTeam && (
+              <div className="px-6 py-5 border-b" style={{ borderColor: "var(--color-line-soft)" }}>
+                <div className="text-xs font-mono uppercase mb-3" style={{ color: "var(--color-ink-soft)" }}>
+                  Tareas internas <span style={{ color: "var(--color-ink-soft)", fontWeight: 400 }}>· no las ve el cliente</span>
+                </div>
+                <div>
+                  {(selected.tasks || []).length === 0 && (
+                    <p className="text-xs" style={{ color: "var(--color-ink-soft)" }}>Sin tareas todavía.</p>
+                  )}
+                  {(selected.tasks || []).map((t) => (
+                    <TaskRow key={t.id} task={t} />
+                  ))}
+                </div>
+                <AddTaskForm projectId={selected.id} teamMembers={teamMembers} />
+              </div>
+            )}
 
             <div className="px-6 py-5 flex-1 overflow-y-auto">
               <div className="text-xs font-mono uppercase mb-3 flex items-center gap-2" style={{ color: "var(--color-ink-soft)" }}>
