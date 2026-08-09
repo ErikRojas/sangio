@@ -182,7 +182,10 @@ function NewProjectModal({ clients, onClose }) {
   );
 }
 
-const MILESTONE_COLORS = ["#3D5A80", "#E0A458", "#588157", "#8A7CA8", "#BC4749", "#6C7A89"];
+// Paleta deliberadamente distinta a la de las etapas (STAGE_META) —
+// así un vistazo rápido distingue "esto es la etapa del proyecto"
+// de "esto es la categoría del hito".
+const MILESTONE_COLORS = ["#B5563C", "#2F6F76", "#A98237", "#6B4E71", "#B0637A", "#7A7F3E"];
 
 function CopyClientLink({ clientId }) {
   const [link, setLink] = useState("");
