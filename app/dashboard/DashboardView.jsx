@@ -647,7 +647,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
         <div>
           <div className="font-display text-lg font-bold">Estudio · Proyectos</div>
           <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
-            {fullName} · {isTeam ? "equipo" : "cliente"}
+            {fullName} · {role === "admin" ? "admin" : role === "team" ? "equipo" : "cliente"}
           </div>
         </div>
         <div className="flex items-center gap-4">
