@@ -155,12 +155,21 @@ export async function getClientMagicLink(clientId) {
   const { data, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: client.contact_email,
-    options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/auth/callback` },
   });
 
   if (error) return { success: false, message: error.message };
 
-  return { success: true, link: data?.properties?.action_link };
+  // OJO: no usamos data.properties.action_link directamente. Ese link de
+  // Supabase se consume solo con "visitarlo" (GET), y apps como WhatsApp
+  // o los escáneres de seguridad de correo lo abren solos para generar
+  // la vista previa, gastando el link antes de que el cliente le dé clic.
+  // En vez de eso, mandamos a nuestra propia página con un botón: el
+  // token solo se consume cuando alguien hace clic de verdad.
+  const hashedToken = data?.properties?.hashed_token;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "";
+  const link = `${siteUrl}/auth/confirm?token_hash=${hashedToken}&type=magiclink`;
+
+  return { success: true, link };
 }
 
 export async function createStudioClient({ name, contactEmail, inviteAsClient }) {
