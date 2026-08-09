@@ -120,6 +120,49 @@ async function ensureClientAuth({ email, fullName, clientId }) {
   return { success: true, userId };
 }
 
+export async function createTask({ projectId, title, assignedTo, dueDate }) {
+  const supabase = createSupabaseServerClient();
+
+  if (!title?.trim()) {
+    return { success: false, message: "El título de la tarea es obligatorio." };
+  }
+
+  const { error } = await supabase.from("tasks").insert({
+    project_id: projectId,
+    title: title.trim(),
+    assigned_to: assignedTo || null,
+    due_date: dueDate || null,
+    status: "pendiente",
+  });
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function updateTaskStatus(taskId, status) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("tasks").update({ status }).eq("id", taskId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteTask(taskId) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
 export async function inviteClient({ email, fullName, clientId }) {
   const supabase = createSupabaseServerClient();
 
