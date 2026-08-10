@@ -23,6 +23,11 @@ import {
   deleteProject,
   updateClient,
   deleteClient,
+  editUpdate,
+  deleteUpdate,
+  addProjectMember,
+  removeProjectMember,
+  duplicateProject,
 } from "./actions";
 
 const STAGE_META = {
@@ -701,6 +706,127 @@ function AddTaskForm({ projectId, teamMembers }) {
   );
 }
 
+function UpdateRow({ update: u, isTeam }) {
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState(u.message);
+  const [visible, setVisible] = useState(u.is_client_visible);
+  const [isPending, startTransition] = useTransition();
+
+  function handleSave(e) {
+    e.preventDefault();
+    startTransition(async () => {
+      const res = await editUpdate({ updateId: u.id, message, isClientVisible: visible });
+      if (res.success) setEditing(false);
+    });
+  }
+
+  function handleDelete() {
+    if (!confirm("¿Borrar esta nota de la bitácora?")) return;
+    startTransition(async () => {
+      await deleteUpdate(u.id);
+    });
+  }
+
+  if (editing) {
+    return (
+      <form onSubmit={handleSave} className="mb-4 space-y-2">
+        <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={2} className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
+        <label className="flex items-center gap-1.5 text-xs" style={{ color: "var(--color-ink-soft)" }}>
+          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+          visible para el cliente
+        </label>
+        <div className="flex gap-2">
+          <button disabled={isPending} type="submit" className="text-xs font-mono px-3 py-1" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            guardar
+          </button>
+          <button type="button" onClick={() => setEditing(false)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+            cancelar
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  return (
+    <div className="text-sm mb-4 group">
+      <div className="flex items-center gap-2 mb-1 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+        {new Date(u.created_at).toLocaleDateString("es-ES")}
+        {isTeam && !u.is_client_visible && (
+          <span className="px-1.5 py-0.5" style={{ backgroundColor: "var(--color-line-soft)" }}>solo equipo</span>
+        )}
+        {isTeam && (
+          <span className="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(true)}><Pencil size={11} color="var(--color-ink-soft)" /></button>
+            <button onClick={handleDelete}><Trash2 size={11} color="#BC4749" /></button>
+          </span>
+        )}
+      </div>
+      <div style={{ color: "var(--color-ink-soft)" }}>{u.message}</div>
+    </div>
+  );
+}
+
+function ProjectTeamSection({ project, teamMembers }) {
+  const [adding, setAdding] = useState(false);
+  const [pickId, setPickId] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  const assignedIds = new Set((project.project_members || []).map((m) => m.profile_id));
+  const available = teamMembers.filter((m) => !assignedIds.has(m.id));
+
+  function handleAdd(e) {
+    e.preventDefault();
+    if (!pickId) return;
+    startTransition(async () => {
+      await addProjectMember(project.id, pickId);
+      setPickId("");
+      setAdding(false);
+    });
+  }
+
+  function handleRemove(memberRowId) {
+    startTransition(async () => {
+      await removeProjectMember(memberRowId);
+    });
+  }
+
+  return (
+    <div className="px-6 py-5 border-b" style={{ borderColor: "var(--color-line-soft)" }}>
+      <div className="text-xs font-mono uppercase mb-3" style={{ color: "var(--color-ink-soft)" }}>Equipo asignado</div>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {(project.project_members || []).length === 0 && (
+          <p className="text-xs" style={{ color: "var(--color-ink-soft)" }}>Nadie asignado todavía.</p>
+        )}
+        {(project.project_members || []).map((m) => (
+          <span key={m.id} className="text-xs px-2 py-1 flex items-center gap-1.5" style={{ backgroundColor: "var(--color-paper-soft)" }}>
+            {m.profiles?.full_name || "—"}
+            <button disabled={isPending} onClick={() => handleRemove(m.id)}><X size={11} color="var(--color-ink-soft)" /></button>
+          </span>
+        ))}
+      </div>
+      {adding ? (
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <select value={pickId} onChange={(e) => setPickId(e.target.value)} className="flex-1 border px-2 py-1.5 text-xs" style={inputStyle()}>
+            <option value="">Elegir...</option>
+            {available.map((m) => (
+              <option key={m.id} value={m.id}>{m.full_name}</option>
+            ))}
+          </select>
+          <button disabled={isPending} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            agregar
+          </button>
+        </form>
+      ) : (
+        available.length > 0 && (
+          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+            <Plus size={12} /> agregar al equipo
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
 function AddUpdateForm({ projectId }) {
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(true);
@@ -910,6 +1036,13 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
     });
   }
 
+  function handleDuplicateProject() {
+    startTransition(async () => {
+      const res = await duplicateProject(selected.id);
+      if (res.success) setSelectedId(res.newProjectId);
+    });
+  }
+
   if (loadError) {
     return <div className="p-6 text-sm" style={{ color: "#BC4749" }}>Error cargando proyectos: {loadError}</div>;
   }
@@ -1042,6 +1175,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
                     {isTeam && (
                       <div className="flex items-center gap-3 mt-3">
                         <button onClick={() => setEditingProject(true)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>editar</button>
+                        <button onClick={handleDuplicateProject} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>duplicar</button>
                         <button onClick={handleDeleteProject} className="text-xs font-mono" style={{ color: "#BC4749" }}>eliminar</button>
                       </div>
                     )}
@@ -1050,6 +1184,8 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
               </div>
               <button onClick={() => setSelectedId(null)}><X size={18} color="var(--color-ink-soft)" /></button>
             </div>
+
+            {isTeam && <ProjectTeamSection project={selected} teamMembers={teamMembers} />}
 
             <div className="px-6 py-5 border-b" style={{ borderColor: "var(--color-line-soft)" }}>
               <div className="flex items-center justify-between mb-2">
@@ -1118,15 +1254,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
               {(selected.project_updates || [])
                 .filter((u) => isTeam || u.is_client_visible)
                 .map((u) => (
-                  <div key={u.id} className="text-sm mb-4">
-                    <div className="flex items-center gap-2 mb-1 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
-                      {new Date(u.created_at).toLocaleDateString("es-ES")}
-                      {isTeam && !u.is_client_visible && (
-                        <span className="px-1.5 py-0.5" style={{ backgroundColor: "var(--color-line-soft)" }}>solo equipo</span>
-                      )}
-                    </div>
-                    <div style={{ color: "var(--color-ink-soft)" }}>{u.message}</div>
-                  </div>
+                  <UpdateRow key={u.id} update={u} isTeam={isTeam} />
                 ))}
             </div>
           </div>
