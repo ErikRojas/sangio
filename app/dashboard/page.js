@@ -28,7 +28,8 @@ export default async function DashboardPage() {
       clients ( id, name ),
       milestones ( id, title, is_done, due_date, sort_order, category, color ),
       project_updates ( id, message, author_id, is_client_visible, created_at ),
-      tasks ( id, title, status, due_date, assigned_to, assignee:profiles ( full_name ) )
+      tasks ( id, title, status, due_date, assigned_to, assignee:profiles ( full_name ) ),
+      project_members ( id, profile_id, profiles ( full_name ) )
     `
     )
     .order("created_at", { ascending: false });
