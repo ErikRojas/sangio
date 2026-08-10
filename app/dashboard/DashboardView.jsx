@@ -192,6 +192,129 @@ function NewProjectModal({ clients, onClose }) {
 // de "esto es la categoría del hito".
 const MILESTONE_COLORS = ["#B5563C", "#2F6F76", "#A98237", "#6B4E71", "#B0637A", "#7A7F3E"];
 
+function GenerateTeamLinkModal({ onClose }) {
+  const [email, setEmail] = useState("");
+  const [link, setLink] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    setLink("");
+    startTransition(async () => {
+      const res = await getTeamMemberMagicLink(email);
+      if (res.success) setLink(res.link);
+      else setError(res.message);
+    });
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(link);
+    setCopied(true);
+  }
+
+  return (
+    <Modal title="Generar link de acceso" onClose={onClose}>
+      {link ? (
+        <div className="space-y-3">
+          <div className="text-[11px] break-all border px-2 py-1.5" style={{ borderColor: "var(--color-line)", color: "var(--color-ink-soft)" }}>
+            {link}
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={handleCopy} className="text-xs font-mono">{copied ? "¡copiado!" : "copiar"}</button>
+            <span className="text-[10px]" style={{ color: "var(--color-ink-soft)" }}>expira en un tiempo limitado</span>
+          </div>
+          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            listo
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>
+            Para alguien de tu equipo que ya tiene cuenta creada pero necesita un link nuevo para entrar (o para poner su contraseña por primera vez).
+          </p>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="correo@ejemplo.com"
+            className="w-full border px-3 py-2 text-sm"
+            style={inputStyle()}
+          />
+          {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
+          <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            {isPending ? "Generando..." : "Generar link"}
+          </button>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setSuccess(true);
+  }
+
+  return (
+    <Modal title="Cambiar contraseña" onClose={onClose}>
+      {success ? (
+        <div className="space-y-3">
+          <p className="text-sm">Listo, tu contraseña quedó actualizada. La próxima vez puedes entrar con correo y contraseña directamente.</p>
+          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            listo
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-mono uppercase mb-1">Nueva contraseña</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
+          </div>
+          <div>
+            <label className="block text-xs font-mono uppercase mb-1">Repetir contraseña</label>
+            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
+          </div>
+          {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
+          <button disabled={loading} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+            {loading ? "Guardando..." : "Guardar contraseña"}
+          </button>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
 function NewTeamMemberModal({ onClose }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -611,6 +734,8 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
   const [showClientModal, setShowClientModal] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showGenLinkModal, setShowGenLinkModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const isTeam = role === "admin" || role === "team";
   const selected = projects.find((p) => p.id === selectedId);
   const supabase = createClient();
@@ -656,7 +781,15 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
               <button onClick={() => setShowClientModal(true)} className="text-xs font-mono">+ cliente</button>
               <button onClick={() => setShowProjectModal(true)} className="text-xs font-mono">+ proyecto</button>
               {role === "admin" && (
-                <button onClick={() => setShowTeamModal(true)} className="text-xs font-mono">+ equipo</button>
+                <>
+                  <button onClick={() => setShowTeamModal(true)} className="text-xs font-mono">+ equipo</button>
+                  <button onClick={() => setShowGenLinkModal(true)} className="text-xs font-mono">acceso</button>
+                </>
+              )}
+              {isTeam && (
+                <button onClick={() => setShowPasswordModal(true)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+                  contraseña
+                </button>
               )}
             </>
           )}
@@ -817,6 +950,8 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
       {showClientModal && <NewClientModal onClose={() => setShowClientModal(false)} />}
       {showProjectModal && <NewProjectModal clients={clients} onClose={() => setShowProjectModal(false)} />}
       {showTeamModal && <NewTeamMemberModal onClose={() => setShowTeamModal(false)} />}
+      {showGenLinkModal && <GenerateTeamLinkModal onClose={() => setShowGenLinkModal(false)} />}
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </div>
   );
 }
