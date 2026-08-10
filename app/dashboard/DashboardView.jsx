@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Check, ChevronRight, MessageSquare, AlertTriangle, X, Plus, Pencil, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -19,6 +19,10 @@ import {
   deleteTask,
   inviteTeamMember,
   getTeamMemberMagicLink,
+  updateProject,
+  deleteProject,
+  updateClient,
+  deleteClient,
 } from "./actions";
 
 const STAGE_META = {
@@ -620,26 +624,32 @@ function TaskRow({ task: t }) {
   }
 
   return (
-    <div className="flex items-center gap-2 py-1.5 group">
-      <button
-        disabled={busy}
-        onClick={handleCycle}
-        className="text-[10px] font-mono uppercase px-2 py-0.5 flex-shrink-0"
-        style={{ backgroundColor: `${meta.color}1A`, color: meta.color }}
-        title="Clic para cambiar el estado"
-      >
-        {meta.label}
-      </button>
-      <span className="flex-1 text-sm truncate" style={{ color: "var(--color-ink)" }}>{t.title}</span>
-      {t.assignee?.full_name && (
-        <span className="text-[11px] flex-shrink-0" style={{ color: "var(--color-ink-soft)" }}>{t.assignee.full_name}</span>
+    <div className="py-2 border-b group" style={{ borderColor: "var(--color-line-soft)" }}>
+      <div className="flex items-start gap-2">
+        <button
+          disabled={busy}
+          onClick={handleCycle}
+          className="text-[10px] font-mono uppercase px-2 py-0.5 flex-shrink-0 mt-0.5"
+          style={{ backgroundColor: `${meta.color}1A`, color: meta.color }}
+          title="Clic para cambiar el estado"
+        >
+          {meta.label}
+        </button>
+        <span className="flex-1 text-sm break-words" style={{ color: "var(--color-ink)" }}>{t.title}</span>
+        <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+          <Trash2 size={12} color="#BC4749" />
+        </button>
+      </div>
+      {(t.assignee?.full_name || t.due_date) && (
+        <div className="flex items-center gap-3 mt-1 pl-1">
+          {t.assignee?.full_name && (
+            <span className="text-[11px]" style={{ color: "var(--color-ink-soft)" }}>{t.assignee.full_name}</span>
+          )}
+          {t.due_date && (
+            <span className="text-[11px] font-mono" style={{ color: "var(--color-ink-soft)" }}>{t.due_date}</span>
+          )}
+        </div>
       )}
-      {t.due_date && (
-        <span className="text-[11px] font-mono flex-shrink-0" style={{ color: "var(--color-ink-soft)" }}>{t.due_date}</span>
-      )}
-      <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <Trash2 size={12} color="#BC4749" />
-      </button>
     </div>
   );
 }
@@ -728,6 +738,128 @@ function AddUpdateForm({ projectId }) {
   );
 }
 
+function EditProjectForm({ project, clients, onDone }) {
+  const [code, setCode] = useState(project.code);
+  const [name, setName] = useState(project.name);
+  const [clientId, setClientId] = useState(project.clients?.id || "");
+  const [dueDate, setDueDate] = useState(project.due_date || "");
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    startTransition(async () => {
+      const res = await updateProject({ projectId: project.id, code, name, clientId, dueDate });
+      if (res.success) onDone();
+      else setError(res.message);
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 w-full">
+      <input value={code} onChange={(e) => setCode(e.target.value)} required className="w-full border px-2 py-1.5 text-sm font-mono" style={inputStyle()} />
+      <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
+      <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full border px-2 py-1.5 text-sm" style={inputStyle()}>
+        {clients.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full border px-2 py-1.5 text-xs" style={inputStyle()} />
+      {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
+      <div className="flex gap-2">
+        <button disabled={isPending} type="submit" className="flex-1 py-1.5 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          {isPending ? "Guardando..." : "Guardar"}
+        </button>
+        <button type="button" onClick={onDone} className="flex-1 py-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ClientsListModal({ clients, onClose }) {
+  const [editingId, setEditingId] = useState(null);
+
+  return (
+    <Modal title="Clientes" onClose={onClose}>
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+        {clients.length === 0 && <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Todavía no tienes clientes.</p>}
+        {clients.map((c) =>
+          editingId === c.id ? (
+            <EditClientRow key={c.id} client={c} onDone={() => setEditingId(null)} />
+          ) : (
+            <ClientRow key={c.id} client={c} onEdit={() => setEditingId(c.id)} />
+          )
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+function ClientRow({ client, onEdit }) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState("");
+
+  function handleDelete() {
+    if (!confirm(`¿Borrar a "${client.name}"? Esto borra también TODOS sus proyectos, hitos y bitácora. Esta acción no se puede deshacer.`)) return;
+    startTransition(async () => {
+      const res = await deleteClient(client.id);
+      if (!res.success) setError(res.message);
+    });
+  }
+
+  return (
+    <div className="border-b pb-3" style={{ borderColor: "var(--color-line-soft)" }}>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{client.name}</div>
+          <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>{client.contact_email || "sin correo"}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={onEdit} className="text-xs font-mono">editar</button>
+          <button disabled={isPending} onClick={handleDelete} className="text-xs font-mono" style={{ color: "#BC4749" }}>eliminar</button>
+        </div>
+      </div>
+      {error && <p className="text-xs mt-1" style={{ color: "#BC4749" }}>{error}</p>}
+    </div>
+  );
+}
+
+function EditClientRow({ client, onDone }) {
+  const [name, setName] = useState(client.name);
+  const [email, setEmail] = useState(client.contact_email || "");
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+    startTransition(async () => {
+      const res = await updateClient({ clientId: client.id, name, contactEmail: email });
+      if (res.success) onDone();
+      else setError(res.message);
+    });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2 border-b pb-3" style={{ borderColor: "var(--color-line-soft)" }}>
+      <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
+      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
+      {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
+      <div className="flex gap-2">
+        <button disabled={isPending} type="submit" className="flex-1 py-1.5 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          {isPending ? "Guardando..." : "Guardar"}
+        </button>
+        <button type="button" onClick={onDone} className="flex-1 py-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          cancelar
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function DashboardView({ role, fullName, projects, clients, teamMembers, loadError }) {
   const [selectedId, setSelectedId] = useState(projects[0]?.id ?? null);
   const [isPending, startTransition] = useTransition();
@@ -736,9 +868,17 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [showGenLinkModal, setShowGenLinkModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showClientsListModal, setShowClientsListModal] = useState(false);
+  const [stageFilter, setStageFilter] = useState("todos");
+  const [editingProject, setEditingProject] = useState(false);
   const isTeam = role === "admin" || role === "team";
   const selected = projects.find((p) => p.id === selectedId);
+  const visibleProjects = stageFilter === "todos" ? projects : projects.filter((p) => p.stage === stageFilter);
   const supabase = createClient();
+
+  useEffect(() => {
+    setEditingProject(false);
+  }, [selectedId]);
 
   function handleLogout() {
     supabase.auth.signOut().then(() => window.location.assign("/login"));
@@ -762,6 +902,14 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
     });
   }
 
+  function handleDeleteProject() {
+    if (!confirm(`¿Borrar el proyecto "${selected.name}"? Se borran también sus hitos, tareas y bitácora. Esto no se puede deshacer.`)) return;
+    startTransition(async () => {
+      await deleteProject(selected.id);
+      setSelectedId(null);
+    });
+  }
+
   if (loadError) {
     return <div className="p-6 text-sm" style={{ color: "#BC4749" }}>Error cargando proyectos: {loadError}</div>;
   }
@@ -778,6 +926,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
         <div className="flex items-center gap-4">
           {isTeam && (
             <>
+              <button onClick={() => setShowClientsListModal(true)} className="text-xs font-mono">clientes</button>
               <button onClick={() => setShowClientModal(true)} className="text-xs font-mono">+ cliente</button>
               <button onClick={() => setShowProjectModal(true)} className="text-xs font-mono">+ proyecto</button>
               {role === "admin" && (
@@ -799,14 +948,39 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
         </div>
       </div>
 
+      <div className="flex items-center gap-2 px-6 py-3 border-b overflow-x-auto flex-shrink-0" style={{ borderColor: "var(--color-line-soft)" }}>
+        <button
+          onClick={() => setStageFilter("todos")}
+          className="text-[11px] font-mono uppercase px-2 py-1 flex-shrink-0"
+          style={{ backgroundColor: stageFilter === "todos" ? "var(--color-ink)" : "var(--color-paper-soft)", color: stageFilter === "todos" ? "var(--color-paper)" : "var(--color-ink-soft)" }}
+        >
+          Todos ({projects.length})
+        </button>
+        {Object.entries(STAGE_META).map(([key, meta]) => (
+          <button
+            key={key}
+            onClick={() => setStageFilter(key)}
+            className="text-[11px] font-mono uppercase px-2 py-1 flex-shrink-0 flex items-center gap-1.5"
+            style={{
+              backgroundColor: stageFilter === key ? `${meta.color}1A` : "transparent",
+              color: meta.color,
+              border: `1px solid ${stageFilter === key ? meta.color : "var(--color-line)"}`,
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: meta.color }} />
+            {meta.label} ({projects.filter((p) => p.stage === key).length})
+          </button>
+        ))}
+      </div>
+
       <div className="flex flex-1 min-h-0">
         <div className="flex-1 overflow-y-auto">
-          {projects.length === 0 && (
+          {visibleProjects.length === 0 && (
             <div className="p-6 text-sm" style={{ color: "var(--color-ink-soft)" }}>
-              Todavía no hay proyectos para mostrar aquí.
+              No hay proyectos en esta etapa.
             </div>
           )}
-          {projects.map((p) => {
+          {visibleProjects.map((p) => {
             const meta = stageMeta(p.stage);
             const isOverdue = p.due_date && new Date(p.due_date) < new Date() && p.stage !== "entregado";
             return (
@@ -841,26 +1015,38 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
         {selected && (
           <div className="w-[380px] flex-shrink-0 hidden lg:flex flex-col border-l" style={{ borderColor: "var(--color-line)" }}>
             <div className="px-6 py-5 border-b flex items-start justify-between" style={{ borderColor: "var(--color-line-soft)" }}>
-              <div>
-                <div className="text-xs font-mono mb-1" style={{ color: "var(--color-ink-soft)" }}>{selected.code} · {selected.clients?.name}</div>
-                {isTeam && <CopyClientLink clientId={selected.clients?.id} />}
-                <div className="font-display text-xl font-bold">{selected.name}</div>
-                <div className="mt-2">
-                  {isTeam ? (
-                    <select
-                      value={selected.stage}
-                      onChange={(e) => handleStageChange(e.target.value)}
-                      className="text-[11px] font-mono uppercase px-2 py-1 border"
-                      style={{ borderColor: stageMeta(selected.stage).color, color: stageMeta(selected.stage).color, backgroundColor: `${stageMeta(selected.stage).color}1A` }}
-                    >
-                      {Object.entries(STAGE_META).map(([key, meta]) => (
-                        <option key={key} value={key}>{meta.label}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <StageTab stage={selected.stage} />
-                  )}
-                </div>
+              <div className="flex-1">
+                {editingProject ? (
+                  <EditProjectForm project={selected} clients={clients} onDone={() => setEditingProject(false)} />
+                ) : (
+                  <>
+                    <div className="text-xs font-mono mb-1" style={{ color: "var(--color-ink-soft)" }}>{selected.code} · {selected.clients?.name}</div>
+                    {isTeam && <CopyClientLink clientId={selected.clients?.id} />}
+                    <div className="font-display text-xl font-bold">{selected.name}</div>
+                    <div className="mt-2">
+                      {isTeam ? (
+                        <select
+                          value={selected.stage}
+                          onChange={(e) => handleStageChange(e.target.value)}
+                          className="text-[11px] font-mono uppercase px-2 py-1 border"
+                          style={{ borderColor: stageMeta(selected.stage).color, color: stageMeta(selected.stage).color, backgroundColor: `${stageMeta(selected.stage).color}1A` }}
+                        >
+                          {Object.entries(STAGE_META).map(([key, meta]) => (
+                            <option key={key} value={key}>{meta.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <StageTab stage={selected.stage} />
+                      )}
+                    </div>
+                    {isTeam && (
+                      <div className="flex items-center gap-3 mt-3">
+                        <button onClick={() => setEditingProject(true)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>editar</button>
+                        <button onClick={handleDeleteProject} className="text-xs font-mono" style={{ color: "#BC4749" }}>eliminar</button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
               <button onClick={() => setSelectedId(null)}><X size={18} color="var(--color-ink-soft)" /></button>
             </div>
@@ -952,6 +1138,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
       {showTeamModal && <NewTeamMemberModal onClose={() => setShowTeamModal(false)} />}
       {showGenLinkModal && <GenerateTeamLinkModal onClose={() => setShowGenLinkModal(false)} />}
       {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
+      {showClientsListModal && <ClientsListModal clients={clients} onClose={() => setShowClientsListModal(false)} />}
     </div>
   );
 }
