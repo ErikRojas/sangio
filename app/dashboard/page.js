@@ -38,7 +38,7 @@ export default async function DashboardPage() {
   // La lista de clientes y de miembros del equipo solo se necesita para
   // los selectores de los formularios, que solo ve el equipo.
   const { data: clients } = isTeam
-    ? await supabase.from("clients").select("id, name").order("name")
+    ? await supabase.from("clients").select("id, name, contact_email").order("name")
     : { data: [] };
 
   const { data: teamMembers } = isTeam
