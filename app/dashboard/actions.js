@@ -303,6 +303,66 @@ export async function createStudioClient({ name, contactEmail, inviteAsClient })
   return { success: true, warning };
 }
 
+export async function updateProject({ projectId, code, name, clientId, dueDate }) {
+  const supabase = createSupabaseServerClient();
+
+  if (!code?.trim() || !name?.trim() || !clientId) {
+    return { success: false, message: "Código, nombre y cliente son obligatorios." };
+  }
+
+  const { error } = await supabase
+    .from("projects")
+    .update({ code: code.trim(), name: name.trim(), client_id: clientId, due_date: dueDate || null })
+    .eq("id", projectId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteProject(projectId) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function updateClient({ clientId, name, contactEmail }) {
+  const supabase = createSupabaseServerClient();
+
+  if (!name?.trim()) return { success: false, message: "El nombre es obligatorio." };
+
+  const { error } = await supabase
+    .from("clients")
+    .update({ name: name.trim(), contact_email: contactEmail?.trim() || null })
+    .eq("id", clientId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// OJO: la tabla projects tiene "on delete cascade" hacia clients — borrar
+// un cliente borra TAMBIÉN todos sus proyectos, hitos y bitácora. Por eso
+// exigimos confirmar explícitamente contando cuántos proyectos se perderían
+// (el aviso real se lo mostramos al usuario desde la interfaz).
+export async function deleteClient(clientId) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("clients").delete().eq("id", clientId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
 export async function createProject({ code, name, clientId, stage, dueDate }) {
   const supabase = createSupabaseServerClient();
 
