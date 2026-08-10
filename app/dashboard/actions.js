@@ -120,6 +120,133 @@ async function ensureClientAuth({ email, fullName, clientId }) {
   return { success: true, userId };
 }
 
+export async function editUpdate({ updateId, message, isClientVisible }) {
+  const supabase = createSupabaseServerClient();
+
+  if (!message?.trim()) {
+    return { success: false, message: "El mensaje no puede estar vacío." };
+  }
+
+  const { error } = await supabase
+    .from("project_updates")
+    .update({ message: message.trim(), is_client_visible: isClientVisible })
+    .eq("id", updateId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteUpdate(updateId) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("project_updates").delete().eq("id", updateId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function addProjectMember(projectId, profileId) {
+  const supabase = createSupabaseServerClient();
+
+  if (!profileId) return { success: false, message: "Elige a alguien primero." };
+
+  const { error } = await supabase.from("project_members").insert({ project_id: projectId, profile_id: profileId });
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function removeProjectMember(memberRowId) {
+  const supabase = createSupabaseServerClient();
+
+  const { error } = await supabase.from("project_members").delete().eq("id", memberRowId);
+
+  if (error) return { success: false, message: error.message };
+
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// Clona un proyecto: datos básicos, hitos (sin marcar como hechos), tareas
+// (reiniciadas a "pendiente"), y el equipo asignado. La bitácora NO se
+// copia, porque es un historial específico de la instancia original.
+export async function duplicateProject(projectId) {
+  const supabase = createSupabaseServerClient();
+
+  const { data: original, error: fetchError } = await supabase
+    .from("projects")
+    .select("code, name, client_id, description")
+    .eq("id", projectId)
+    .single();
+
+  if (fetchError || !original) {
+    return { success: false, message: fetchError?.message || "No se encontró el proyecto original." };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const baseInsert = {
+    name: `${original.name} (copia)`,
+    client_id: original.client_id,
+    description: original.description,
+    stage: "brief",
+    progress: 0,
+    created_by: user?.id || null,
+  };
+
+  let { data: created, error: insertError } = await supabase
+    .from("projects")
+    .insert({ ...baseInsert, code: `${original.code}-COPIA` })
+    .select()
+    .single();
+
+  if (insertError) {
+    // El código probablemente ya existía; probamos con un sufijo distinto.
+    ({ data: created, error: insertError } = await supabase
+      .from("projects")
+      .insert({ ...baseInsert, code: `${original.code}-COPIA-${Date.now().toString().slice(-4)}` })
+      .select()
+      .single());
+  }
+
+  if (insertError) return { success: false, message: insertError.message };
+
+  const newProjectId = created.id;
+
+  const [{ data: milestones }, { data: tasks }, { data: members }] = await Promise.all([
+    supabase.from("milestones").select("title, category, color, sort_order").eq("project_id", projectId),
+    supabase.from("tasks").select("title, assigned_to").eq("project_id", projectId),
+    supabase.from("project_members").select("profile_id").eq("project_id", projectId),
+  ]);
+
+  if (milestones?.length) {
+    await supabase.from("milestones").insert(
+      milestones.map((m) => ({ ...m, project_id: newProjectId, is_done: false, due_date: null }))
+    );
+  }
+  if (tasks?.length) {
+    await supabase.from("tasks").insert(
+      tasks.map((t) => ({ ...t, project_id: newProjectId, status: "pendiente", due_date: null }))
+    );
+  }
+  if (members?.length) {
+    await supabase.from("project_members").insert(
+      members.map((m) => ({ project_id: newProjectId, profile_id: m.profile_id }))
+    );
+  }
+
+  revalidatePath("/dashboard");
+  return { success: true, newProjectId };
+}
+
 export async function createTask({ projectId, title, assignedTo, dueDate }) {
   const supabase = createSupabaseServerClient();
 
