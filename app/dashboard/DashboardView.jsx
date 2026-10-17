@@ -1162,7 +1162,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
                 ) : (
                   <>
                     <div className="text-xs font-mono mb-1" style={{ color: "var(--color-ink-soft)" }}>{selected.code} · {selected.clients?.name}</div>
-                    {isTeam && <CopyClientLink clientId={selected.clients?.id} />}
+                    {isTeam && <CopyClientLink key={selected.id} clientId={selected.clients?.id} />}
                     <div className="font-display text-xl font-bold">{selected.name}</div>
                     <div className="mt-2">
                       {isTeam ? (
