@@ -57,7 +57,8 @@ export async function toggleMilestone(milestoneId, nextDone, projectId) {
 export async function updateProjectStage(projectId, stage) {
   const supabase = createSupabaseServerClient();
 
-  const { error } = await supabase.from("projects").update({ stage }).eq("id", projectId);
+  const stageUpdate = stage === "entregado" ? { stage, public_token: null } : { stage };
+  const { error } = await supabase.from("projects").update(stageUpdate).eq("id", projectId);
 
   if (error) return { success: false, message: error.message };
 
@@ -349,6 +350,63 @@ export async function getClientMagicLink(clientId) {
   if (!ensured.success) return ensured;
 
   return buildConfirmLink(client.contact_email);
+}
+
+// Genera o reutiliza un enlace público persistente para consultar el estado
+// de un proyecto. Solo admin/equipo puede generarlo; el token nunca se expone
+// en las consultas normales del dashboard.
+export async function getProjectPublicLink(projectId) {
+  const supabase = createSupabaseServerClient();
+
+  if (!(await assertIsTeam(supabase))) {
+    return { success: false, message: "No autorizado." };
+  }
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, stage, public_token")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (projectError || !project) {
+    return { success: false, message: "No se encontró el proyecto." };
+  }
+  if (project.stage === "entregado") {
+    return { success: false, message: "El enlace de seguimiento se desactiva al entregar el proyecto." };
+  }
+
+  let token = project.public_token;
+  if (!token) {
+    // UUID aleatorio criptográfico; la condición public_token IS NULL evita
+    // que dos solicitudes simultáneas creen enlaces distintos.
+    const candidate = crypto.randomUUID();
+    const { data: updated, error: updateError } = await supabase
+      .from("projects")
+      .update({ public_token: candidate })
+      .eq("id", projectId)
+      .is("public_token", null)
+      .select("public_token")
+      .maybeSingle();
+
+    if (updateError) return { success: false, message: updateError.message };
+    token = updated?.public_token;
+
+    // Otra solicitud pudo haber creado el enlace primero.
+    if (!token) {
+      const { data: latest, error: latestError } = await supabase
+        .from("projects")
+        .select("stage, public_token")
+        .eq("id", projectId)
+        .maybeSingle();
+      if (latestError || !latest || latest.stage === "entregado" || !latest.public_token) {
+        return { success: false, message: "No se pudo generar el enlace. Inténtalo de nuevo." };
+      }
+      token = latest.public_token;
+    }
+  }
+
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://proyectos.zangyostudio.com").replace(/\\/$/, "");
+  return { success: true, link: `${baseUrl}/seguimiento/${token}` };
 }
 
 // Igual que ensureClientAuth, pero para gente de tu equipo (admin/team),
