@@ -14,6 +14,7 @@ import {
   updateProjectStage,
   setProjectProgress,
   getClientMagicLink,
+  getProjectPublicLink,
   createTask,
   updateTaskStatus,
   deleteTask,
@@ -440,6 +441,54 @@ function CopyClientLink({ clientId }) {
       <button onClick={handleGenerate} disabled={isPending} className="btn btn-sm">
         {isPending ? "generando..." : "copiar link de acceso del cliente"}
       </button>
+      {error && <p className="text-[11px] mt-1" style={{ color: "#BC4749" }}>{error}</p>}
+    </div>
+  );
+}
+
+function CopyProjectStatusLink({ projectId, stage }) {
+  const [link, setLink] = useState("");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function handleGenerate() {
+    setError("");
+    setCopied(false);
+    startTransition(async () => {
+      const res = await getProjectPublicLink(projectId);
+      if (res.success) setLink(res.link);
+      else setError(res.message);
+    });
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+    } catch {
+      setError("No se pudo copiar automáticamente. Selecciona y copia el enlace.");
+    }
+  }
+
+  if (stage === "entregado") {
+    return <p className="mt-2 text-[11px]" style={{ color: "var(--color-ink-soft)" }}>Enlace de seguimiento desactivado al entregar.</p>;
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5">
+      <button onClick={handleGenerate} disabled={isPending} className="btn btn-sm">
+        {isPending ? "generando..." : link ? "actualizar enlace de seguimiento" : "generar link de seguimiento"}
+      </button>
+      {link && (
+        <div className="space-y-1.5">
+          <div className="text-[11px] break-all border px-2 py-1.5" style={{ borderColor: "var(--color-line)", color: "var(--color-ink-soft)" }}>
+            {link}
+          </div>
+          <button onClick={handleCopy} className="btn btn-sm">{copied ? "¡copiado!" : "copiar enlace"}</button>
+          <span className="ml-2 text-[10px]" style={{ color: "var(--color-ink-soft)" }}>Reutilizable mientras el proyecto siga activo.</span>
+        </div>
+      )}
       {error && <p className="text-[11px] mt-1" style={{ color: "#BC4749" }}>{error}</p>}
     </div>
   );
@@ -1159,6 +1208,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
                   <>
                     <div className="text-xs font-mono mb-1" style={{ color: "var(--color-ink-soft)" }}>{selected.code} · {selected.clients?.name}</div>
                     {isTeam && <CopyClientLink key={selected.id} clientId={selected.clients?.id} />}
+                    {isTeam && <CopyProjectStatusLink key={`tracking-${selected.id}`} projectId={selected.id} stage={selected.stage} />}
                     <div className="font-display text-xl font-bold">{selected.name}</div>
                     <div className="mt-2">
                       {isTeam ? (
