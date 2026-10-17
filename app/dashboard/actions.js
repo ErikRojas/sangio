@@ -405,7 +405,7 @@ export async function getProjectPublicLink(projectId) {
     }
   }
 
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://proyectos.zangyostudio.com").replace(/\\/$/, "");
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://proyectos.zangyostudio.com").replace(/\/$/, "");
   return { success: true, link: `${baseUrl}/seguimiento/${token}` };
 }
 
