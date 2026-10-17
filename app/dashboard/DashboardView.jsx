@@ -1050,10 +1050,18 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
   return (
     <div className="min-h-screen flex flex-col">
       <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-line)" }}>
-        <div>
-          <div className="font-display text-lg font-bold">Estudio · Proyectos</div>
-          <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
-            {fullName} · {role === "admin" ? "admin" : role === "team" ? "equipo" : "cliente"}
+        <div className="flex items-center gap-3">
+          <img
+            src="/logo.png"
+            alt="Logo del estudio"
+            className="h-7 w-auto"
+            onError={(e) => { e.currentTarget.style.display = "none"; }}
+          />
+          <div>
+            <div className="font-display text-lg font-bold">Estudio · Proyectos</div>
+            <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
+              {fullName} · {role === "admin" ? "admin" : role === "team" ? "equipo" : "cliente"}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-4">
