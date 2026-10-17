@@ -1058,7 +1058,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
             onError={(e) => { e.currentTarget.style.display = "none"; }}
           />
           <div>
-            <div className="font-display text-lg font-bold">Estudio · Proyectos</div>
+            <div className="font-display text-lg font-bold">Proyectos</div>
             <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>
               {fullName} · {role === "admin" ? "admin" : role === "team" ? "equipo" : "cliente"}
             </div>
