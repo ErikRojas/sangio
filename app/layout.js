@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Estudio · Proyectos",
-  description: "Sistema de manejo de proyectos para clientes y equipo",
+  title: "Zangyo · Proyectos",
+  description: "Sistema de manejo de proyectos para clientes y equipo Zangyo",
 };
 
 export default function RootLayout({ children }) {
