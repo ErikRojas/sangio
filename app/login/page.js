@@ -37,6 +37,12 @@ export default function LoginPage() {
         className="w-full max-w-sm border p-8"
         style={{ borderColor: "var(--color-line)" }}
       >
+        <img
+          src="/logo.png"
+          alt="Logo del estudio"
+          className="h-9 w-auto mb-5"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        />
         <h1 className="font-display text-xl font-bold mb-1">Estudio · Proyectos</h1>
         <p className="text-sm mb-6" style={{ color: "var(--color-ink-soft)" }}>
           Acceso para el equipo. Si eres cliente, usa el link que te compartió el estudio.
