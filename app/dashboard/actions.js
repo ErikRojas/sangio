@@ -111,6 +111,16 @@ async function ensureClientAuth({ email, fullName, clientId }) {
     if (!userId) return { success: false, message: createError.message };
   }
 
+  // Protección: si ese correo ya es de alguien del equipo (admin/team), NO
+  // lo convertimos en cliente (le quitaríamos sus permisos).
+  const { data: existingProfile } = await admin.from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (existingProfile && existingProfile.role !== "client") {
+    return {
+      success: false,
+      message: "Ese correo pertenece a alguien del equipo. Usa un correo distinto para el cliente.",
+    };
+  }
+  
   const { error: profileError } = await admin
     .from("profiles")
     .upsert({ id: userId, full_name: fullName || email.trim(), role: "client", client_id: clientId });
