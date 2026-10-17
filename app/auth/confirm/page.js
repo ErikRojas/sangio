@@ -39,6 +39,12 @@ function ConfirmInner() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 text-center">
       <div className="max-w-sm">
+        <img
+          src="/logo.png"
+          alt="Logo del estudio"
+          className="h-9 w-auto mx-auto mb-5"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        />
         <h1 className="font-display text-xl font-bold mb-2">Estudio · Proyectos</h1>
         <p className="text-sm mb-6" style={{ color: "var(--color-ink-soft)" }}>
           Toca el botón para entrar y ver el avance de tu proyecto.
