@@ -75,7 +75,7 @@ function Modal({ title, onClose, children }) {
       <div className="w-full max-w-md" style={{ backgroundColor: "var(--color-paper)" }}>
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-line-soft)" }}>
           <h2 className="font-display font-bold">{title}</h2>
-          <button onClick={onClose}><X size={18} color="var(--color-ink-soft)" /></button>
+          <button onClick={onClose} className="icon-btn" aria-label="Cerrar" title="Cerrar"><X size={18} color="var(--color-ink-soft)" /></button>
         </div>
         <div className="px-6 py-5">{children}</div>
       </div>
@@ -122,11 +122,11 @@ function NewClientModal({ onClose }) {
         )}
         {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
         {warning && <p className="text-xs" style={{ color: "#E0A458" }}>{warning}</p>}
-        <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-lg w-full">
           {isPending ? "Guardando..." : "Crear cliente"}
         </button>
         {warning && (
-          <button type="button" onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          <button type="button" onClick={onClose} className="btn btn-lg w-full">
             cerrar de todas formas
           </button>
         )}
@@ -187,7 +187,7 @@ function NewProjectModal({ clients, onClose }) {
             <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
           </div>
           {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
-          <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={isPending} type="submit" className="btn btn-primary btn-lg w-full">
             {isPending ? "Guardando..." : "Crear proyecto"}
           </button>
         </form>
@@ -232,10 +232,10 @@ function GenerateTeamLinkModal({ onClose }) {
             {link}
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={handleCopy} className="text-xs font-mono">{copied ? "¡copiado!" : "copiar"}</button>
+            <button onClick={handleCopy} className="btn btn-sm">{copied ? "¡copiado!" : "copiar"}</button>
             <span className="text-[10px]" style={{ color: "var(--color-ink-soft)" }}>expira en un tiempo limitado</span>
           </div>
-          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button onClick={onClose} className="btn btn-primary btn-lg w-full">
             listo
           </button>
         </div>
@@ -254,7 +254,7 @@ function GenerateTeamLinkModal({ onClose }) {
             style={inputStyle()}
           />
           {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
-          <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={isPending} type="submit" className="btn btn-primary btn-lg w-full">
             {isPending ? "Generando..." : "Generar link"}
           </button>
         </form>
@@ -300,7 +300,7 @@ function ChangePasswordModal({ onClose }) {
       {success ? (
         <div className="space-y-3">
           <p className="text-sm">Listo, tu contraseña quedó actualizada. La próxima vez puedes entrar con correo y contraseña directamente.</p>
-          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button onClick={onClose} className="btn btn-primary btn-lg w-full">
             listo
           </button>
         </div>
@@ -315,7 +315,7 @@ function ChangePasswordModal({ onClose }) {
             <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required className="w-full border px-3 py-2 text-sm" style={inputStyle()} />
           </div>
           {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
-          <button disabled={loading} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={loading} type="submit" className="btn btn-primary btn-lg w-full">
             {loading ? "Guardando..." : "Guardar contraseña"}
           </button>
         </form>
@@ -362,10 +362,10 @@ function NewTeamMemberModal({ onClose }) {
             {link}
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={handleCopy} className="text-xs font-mono">{copied ? "¡copiado!" : "copiar"}</button>
+            <button onClick={handleCopy} className="btn btn-sm">{copied ? "¡copiado!" : "copiar"}</button>
             <span className="text-[10px]" style={{ color: "var(--color-ink-soft)" }}>expira en un tiempo limitado</span>
           </div>
-          <button onClick={onClose} className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button onClick={onClose} className="btn btn-primary btn-lg w-full">
             listo
           </button>
         </div>
@@ -387,7 +387,7 @@ function NewTeamMemberModal({ onClose }) {
             </select>
           </div>
           {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
-          <button disabled={isPending} type="submit" className="w-full py-2 text-sm font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={isPending} type="submit" className="btn btn-primary btn-lg w-full">
             {isPending ? "Creando..." : "Crear cuenta"}
           </button>
         </form>
@@ -424,7 +424,7 @@ function CopyClientLink({ clientId }) {
           {link}
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={handleCopy} className="text-xs font-mono" style={{ color: "var(--color-ink)" }}>
+          <button onClick={handleCopy} className="btn btn-sm">
             {copied ? "¡copiado!" : "copiar"}
           </button>
           <span className="text-[10px]" style={{ color: "var(--color-ink-soft)" }}>
@@ -437,7 +437,7 @@ function CopyClientLink({ clientId }) {
 
   return (
     <div className="mt-2">
-      <button onClick={handleGenerate} disabled={isPending} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+      <button onClick={handleGenerate} disabled={isPending} className="btn btn-sm">
         {isPending ? "generando..." : "copiar link de acceso del cliente"}
       </button>
       {error && <p className="text-[11px] mt-1" style={{ color: "#BC4749" }}>{error}</p>}
@@ -492,10 +492,10 @@ function MilestoneRow({ milestone: m, isTeam, isPending, onToggle }) {
         </div>
         <div className="flex gap-2">
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="flex-1 border px-2 py-1.5 text-xs" style={inputStyle()} />
-          <button disabled={busy} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={busy} type="submit" className="btn btn-primary btn-sm">
             guardar
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="px-3 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          <button type="button" onClick={() => setEditing(false)} className="btn btn-sm">
             cancelar
           </button>
         </div>
@@ -525,9 +525,9 @@ function MilestoneRow({ milestone: m, isTeam, isPending, onToggle }) {
       </span>
       <span className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>{m.due_date}</span>
       {isTeam && (
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => setEditing(true)}><Pencil size={13} color="var(--color-ink-soft)" /></button>
-          <button onClick={handleDelete}><Trash2 size={13} color="#BC4749" /></button>
+        <div className="flex items-center gap-0.5 opacity-50 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+          <button onClick={() => setEditing(true)} className="icon-btn" aria-label="Editar hito" title="Editar hito"><Pencil size={13} color="var(--color-ink-soft)" /></button>
+          <button onClick={handleDelete} className="icon-btn" aria-label="Borrar hito" title="Borrar hito"><Trash2 size={13} color="#BC4749" /></button>
         </div>
       )}
     </div>
@@ -558,7 +558,7 @@ function AddMilestoneForm({ projectId }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-xs font-mono mt-3" style={{ color: "var(--color-ink-soft)" }}>
+      <button onClick={() => setOpen(true)} className="btn btn-sm mt-3">
         <Plus size={12} /> agregar hito
       </button>
     );
@@ -595,7 +595,7 @@ function AddMilestoneForm({ projectId }) {
       </div>
       <div className="flex gap-2">
         <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="flex-1 border px-2 py-1.5 text-xs" style={inputStyle()} />
-        <button disabled={isPending} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-sm">
           agregar
         </button>
       </div>
@@ -635,13 +635,13 @@ function TaskRow({ task: t }) {
           disabled={busy}
           onClick={handleCycle}
           className="text-[10px] font-mono uppercase px-2 py-0.5 flex-shrink-0 mt-0.5"
-          style={{ backgroundColor: `${meta.color}1A`, color: meta.color }}
+          style={{ backgroundColor: `${meta.color}1A`, color: meta.color, border: `1px solid ${meta.color}66` }}
           title="Clic para cambiar el estado"
         >
           {meta.label}
         </button>
         <span className="flex-1 text-sm break-words" style={{ color: "var(--color-ink)" }}>{t.title}</span>
-        <button onClick={handleDelete} className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5">
+        <button onClick={handleDelete} className="icon-btn opacity-50 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex-shrink-0" aria-label="Borrar tarea" title="Borrar tarea">
           <Trash2 size={12} color="#BC4749" />
         </button>
       </div>
@@ -681,7 +681,7 @@ function AddTaskForm({ projectId, teamMembers }) {
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="flex items-center gap-1.5 text-xs font-mono mt-2" style={{ color: "var(--color-ink-soft)" }}>
+      <button onClick={() => setOpen(true)} className="btn btn-sm mt-2">
         <Plus size={12} /> agregar tarea
       </button>
     );
@@ -698,7 +698,7 @@ function AddTaskForm({ projectId, teamMembers }) {
           ))}
         </select>
         <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="border px-2 py-1.5 text-xs" style={inputStyle()} />
-        <button disabled={isPending} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-sm">
           agregar
         </button>
       </div>
@@ -736,10 +736,10 @@ function UpdateRow({ update: u, isTeam }) {
           visible para el cliente
         </label>
         <div className="flex gap-2">
-          <button disabled={isPending} type="submit" className="text-xs font-mono px-3 py-1" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={isPending} type="submit" className="btn btn-primary btn-sm">
             guardar
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          <button type="button" onClick={() => setEditing(false)} className="btn btn-sm">
             cancelar
           </button>
         </div>
@@ -755,9 +755,9 @@ function UpdateRow({ update: u, isTeam }) {
           <span className="px-1.5 py-0.5" style={{ backgroundColor: "var(--color-line-soft)" }}>solo equipo</span>
         )}
         {isTeam && (
-          <span className="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => setEditing(true)}><Pencil size={11} color="var(--color-ink-soft)" /></button>
-            <button onClick={handleDelete}><Trash2 size={11} color="#BC4749" /></button>
+          <span className="ml-auto flex items-center gap-0.5 opacity-50 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+            <button onClick={() => setEditing(true)} className="icon-btn" aria-label="Editar nota" title="Editar nota"><Pencil size={11} color="var(--color-ink-soft)" /></button>
+            <button onClick={handleDelete} className="icon-btn" aria-label="Borrar nota" title="Borrar nota"><Trash2 size={11} color="#BC4749" /></button>
           </span>
         )}
       </div>
@@ -800,7 +800,7 @@ function ProjectTeamSection({ project, teamMembers }) {
         {(project.project_members || []).map((m) => (
           <span key={m.id} className="text-xs px-2 py-1 flex items-center gap-1.5" style={{ backgroundColor: "var(--color-paper-soft)" }}>
             {m.profiles?.full_name || "—"}
-            <button disabled={isPending} onClick={() => handleRemove(m.id)}><X size={11} color="var(--color-ink-soft)" /></button>
+            <button disabled={isPending} onClick={() => handleRemove(m.id)} className="icon-btn" aria-label="Quitar del equipo" title="Quitar del equipo"><X size={11} color="var(--color-ink-soft)" /></button>
           </span>
         ))}
       </div>
@@ -812,13 +812,13 @@ function ProjectTeamSection({ project, teamMembers }) {
               <option key={m.id} value={m.id}>{m.full_name}</option>
             ))}
           </select>
-          <button disabled={isPending} type="submit" className="px-3 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+          <button disabled={isPending} type="submit" className="btn btn-primary btn-sm">
             agregar
           </button>
         </form>
       ) : (
         available.length > 0 && (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+          <button onClick={() => setAdding(true)} className="btn btn-sm">
             <Plus size={12} /> agregar al equipo
           </button>
         )
@@ -856,7 +856,7 @@ function AddUpdateForm({ projectId }) {
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
           visible para el cliente
         </label>
-        <button disabled={isPending} type="submit" className="px-3 py-1 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-sm">
           publicar
         </button>
       </div>
@@ -894,10 +894,10 @@ function EditProjectForm({ project, clients, onDone }) {
       <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full border px-2 py-1.5 text-xs" style={inputStyle()} />
       {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
       <div className="flex gap-2">
-        <button disabled={isPending} type="submit" className="flex-1 py-1.5 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-sm flex-1">
           {isPending ? "Guardando..." : "Guardar"}
         </button>
-        <button type="button" onClick={onDone} className="flex-1 py-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+        <button type="button" onClick={onDone} className="btn btn-sm flex-1">
           cancelar
         </button>
       </div>
@@ -944,8 +944,8 @@ function ClientRow({ client, onEdit }) {
           <div className="text-xs" style={{ color: "var(--color-ink-soft)" }}>{client.contact_email || "sin correo"}</div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={onEdit} className="text-xs font-mono">editar</button>
-          <button disabled={isPending} onClick={handleDelete} className="text-xs font-mono" style={{ color: "#BC4749" }}>eliminar</button>
+          <button onClick={onEdit} className="btn btn-sm">editar</button>
+          <button disabled={isPending} onClick={handleDelete} className="btn btn-sm btn-danger">eliminar</button>
         </div>
       </div>
       {error && <p className="text-xs mt-1" style={{ color: "#BC4749" }}>{error}</p>}
@@ -975,10 +975,10 @@ function EditClientRow({ client, onDone }) {
       <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border px-2 py-1.5 text-sm" style={inputStyle()} />
       {error && <p className="text-xs" style={{ color: "#BC4749" }}>{error}</p>}
       <div className="flex gap-2">
-        <button disabled={isPending} type="submit" className="flex-1 py-1.5 text-xs font-mono" style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}>
+        <button disabled={isPending} type="submit" className="btn btn-primary btn-sm flex-1">
           {isPending ? "Guardando..." : "Guardar"}
         </button>
-        <button type="button" onClick={onDone} className="flex-1 py-1.5 text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
+        <button type="button" onClick={onDone} className="btn btn-sm flex-1">
           cancelar
         </button>
       </div>
@@ -1049,7 +1049,7 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--color-line)" }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b" style={{ borderColor: "var(--color-line)" }}>
         <div className="flex items-center gap-3">
           <img
             src="/logo.png"
@@ -1064,28 +1064,24 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {isTeam && (
             <>
-              <button onClick={() => setShowClientsListModal(true)} className="text-xs font-mono">clientes</button>
-              <button onClick={() => setShowClientModal(true)} className="text-xs font-mono">+ cliente</button>
-              <button onClick={() => setShowProjectModal(true)} className="text-xs font-mono">+ proyecto</button>
+              <button onClick={() => setShowClientsListModal(true)} className="btn">clientes</button>
+              <button onClick={() => setShowClientModal(true)} className="btn">+ cliente</button>
+              <button onClick={() => setShowProjectModal(true)} className="btn btn-primary">+ proyecto</button>
               {role === "admin" && (
                 <>
-                  <button onClick={() => setShowTeamModal(true)} className="text-xs font-mono">+ equipo</button>
-                  <button onClick={() => setShowGenLinkModal(true)} className="text-xs font-mono">acceso</button>
+                  <span className="toolbar-divider" aria-hidden="true" />
+                  <button onClick={() => setShowTeamModal(true)} className="btn">+ equipo</button>
+                  <button onClick={() => setShowGenLinkModal(true)} className="btn">acceso</button>
                 </>
               )}
-              {isTeam && (
-                <button onClick={() => setShowPasswordModal(true)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
-                  contraseña
-                </button>
-              )}
+              <span className="toolbar-divider" aria-hidden="true" />
+              <button onClick={() => setShowPasswordModal(true)} className="btn">contraseña</button>
             </>
           )}
-          <button onClick={handleLogout} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>
-            cerrar sesión
-          </button>
+          <button onClick={handleLogout} className="btn">cerrar sesión</button>
         </div>
       </div>
 
@@ -1181,16 +1177,16 @@ export default function DashboardView({ role, fullName, projects, clients, teamM
                       )}
                     </div>
                     {isTeam && (
-                      <div className="flex items-center gap-3 mt-3">
-                        <button onClick={() => setEditingProject(true)} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>editar</button>
-                        <button onClick={handleDuplicateProject} className="text-xs font-mono" style={{ color: "var(--color-ink-soft)" }}>duplicar</button>
-                        <button onClick={handleDeleteProject} className="text-xs font-mono" style={{ color: "#BC4749" }}>eliminar</button>
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        <button onClick={() => setEditingProject(true)} className="btn btn-sm">editar</button>
+                        <button onClick={handleDuplicateProject} className="btn btn-sm">duplicar</button>
+                        <button onClick={handleDeleteProject} className="btn btn-sm btn-danger">eliminar</button>
                       </div>
                     )}
                   </>
                 )}
               </div>
-              <button onClick={() => setSelectedId(null)}><X size={18} color="var(--color-ink-soft)" /></button>
+              <button onClick={() => setSelectedId(null)} className="icon-btn" aria-label="Cerrar panel" title="Cerrar panel"><X size={18} color="var(--color-ink-soft)" /></button>
             </div>
 
             {isTeam && <ProjectTeamSection project={selected} teamMembers={teamMembers} />}
