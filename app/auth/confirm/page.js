@@ -52,8 +52,7 @@ function ConfirmInner() {
         <button
           onClick={handleEnter}
           disabled={loading}
-          className="w-full py-2 text-sm font-mono"
-          style={{ backgroundColor: "var(--color-ink)", color: "var(--color-paper)" }}
+          className="btn btn-primary btn-lg w-full"
         >
           {loading ? "Entrando..." : "Entrar a mi proyecto"}
         </button>
