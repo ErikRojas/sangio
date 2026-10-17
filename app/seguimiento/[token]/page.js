@@ -49,7 +49,12 @@ export default async function ProjectTrackingPage({ params }) {
   return (
     <main className="min-h-screen px-5 py-10" style={{ background: "var(--color-paper)", color: "var(--color-ink)" }}>
       <div className="mx-auto max-w-2xl space-y-6">
-        <header className="space-y-2">
+        <header className="space-y-3">
+          <img
+            src="/logo.png"
+            alt="ZANGYO"
+            className="h-12 w-auto object-contain"
+          />
           <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--color-ink-soft)" }}>Seguimiento de proyecto</p>
           <h1 className="text-3xl font-semibold">{project.name}</h1>
           <p className="text-sm" style={{ color: "var(--color-ink-soft)" }}>Proyecto {project.code}</p>
